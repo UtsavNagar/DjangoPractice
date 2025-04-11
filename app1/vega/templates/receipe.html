@@ -1,0 +1,150 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-5">
+    <div class="max-w-4xl mx-auto">
+
+        <!-- Add Recipe Form -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">Add New Recipe</h1>
+
+            <form method="POST" enctype="multipart/form-data" class="space-y-5">
+                {% csrf_token %}
+                <div>
+                    <label for="name" class="block font-semibold mb-2 text-gray-700">Name:</label>
+                    <input type="text" id="name" name="name" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label for="description" class="block font-semibold mb-2 text-gray-700">Description:</label>
+                    <textarea id="description" name="description" required
+                              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-y"></textarea>
+                </div>
+
+                <div>
+                    <label for="image" class="block font-semibold mb-2 text-gray-700">Image:</label>
+                    <div class="mt-2">
+                        <label for="image" 
+                               class="inline-block bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors cursor-pointer">
+                            Choose File
+                        </label>
+                        <input type="file" id="image" name="image" accept="image/*" onchange="previewImage(this)" class="hidden">
+                        <div id="fileName" class="mt-2 text-sm text-gray-600">No file chosen</div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <img id="imagePreview" src="#" alt="Image preview" class="hidden max-h-40 mx-auto border border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <button type="submit" 
+                        class="w-full bg-green-500 text-white py-3 rounded-md hover:bg-green-600 transition-colors font-medium">
+                    Submit
+                </button>
+            </form>
+        </div>
+
+
+        <!-- Search Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Search Recipes</h2>
+            <form method="GET" action="" class="flex flex-col md:flex-row gap-3">
+                <input type="text" name="search" placeholder="Search by name or description..." 
+                       class="flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       value="{{ request.GET.search }}">
+                <button type="submit" 
+                        class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors">
+                    Search
+                </button>
+                {% if request.GET.search %}
+                <a href="{% url 'receipe' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors text-center">
+                    Clear
+                </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Recipe List Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <h2 class="text-xl font-bold p-4 border-b border-gray-200 bg-gray-50">Recipe List</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">Sr.no</th>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">Name</th>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">Description</th>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">Image</th>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for receipe in allReceipe %}
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-4 text-gray-700">{{forloop.counter}}</td>
+                            <td class="py-3 px-4 text-gray-700">{{receipe.name}}</td>
+                            <td class="py-3 px-4 text-gray-700">{{receipe.description|truncatechars:100}}</td>
+                            <td class="py-3 px-4">
+                                {% if receipe.image %}
+                                <img src="{{ receipe.image.url }}" alt="{{ receipe.name }}" class="max-w-24 mx-auto rounded">
+                                {% else %}
+                                <span class="text-gray-500">No image available</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <a href="/delete-receipe/{{receipe.id}}" 
+                                       class="text-center bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors text-sm">
+                                        Delete
+                                    </a>
+                                    <a href="/update-receipe/{{receipe.id}}" 
+                                       class="text-center bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors text-sm">
+                                        Update
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-gray-500">No recipes found. Add your first recipe above!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function previewImage(input) {
+            const fileName = input.files[0] ? input.files[0].name : "No file chosen";
+            document.getElementById("fileName").textContent = fileName;
+
+            const preview = document.getElementById("imagePreview");
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove("hidden");
+                }
+
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.classList.add("hidden");
+            }
+        }
+    </script>
+</body>
+
+</html>
